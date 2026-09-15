@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eDMS</title>
+    <title>Railway Section & Station Directory</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client CDN -->
@@ -33,7 +33,7 @@
                         <svg class="w-7 h-7 text-blue-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0V4a2 2 0 00-2-2H8a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7.5L12 13z"></path>
                         </svg>
-                        eDMS
+                        Railway Section & Station Directory
                     </h1>
                     <div class="flex items-center gap-2 mt-1">
                         <span id="syncBadge" class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-800 text-blue-200">
@@ -84,7 +84,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                    <input type="text" id="searchInput" onkeyup="renderSections()" placeholder="Search station name, code, or document..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-slate-800">
+                    <input type="text" id="searchInput" onkeyup="renderSections()" placeholder="Search station, code, version, or document..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-slate-800">
                 </div>
                 <span id="overallStats" class="text-xs text-blue-200 font-medium">Ready</span>
             </div>
@@ -102,6 +102,65 @@
         <!-- Sections Collapsible Container -->
         <div id="sectionsContainer" class="space-y-4"></div>
 
+    </div>
+
+    <!-- ================= MODAL: VERSION HISTORY & LOGS ================= -->
+    <div id="versionModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl p-6 relative max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+                <div>
+                    <h3 id="versionModalTitle" class="text-lg font-bold text-slate-900">Document Revision History</h3>
+                    <p id="versionModalSub" class="text-xs text-slate-500"></p>
+                </div>
+                <button type="button" onclick="closeModal('versionModal')" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="my-4 overflow-y-auto custom-scrollbar space-y-4 flex-1 pr-1">
+                <!-- Current Active Version Highlight Box -->
+                <div id="versionActiveCard" class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"></div>
+
+                <!-- Admin New Version Upload Form -->
+                <div id="adminNewVersionBox" class="hidden bg-slate-50 border border-dashed border-amber-300 rounded-xl p-4">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        Publish New Revision / Alt Sheet
+                    </h4>
+                    <form onsubmit="handlePublishNewVersion(event)" class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">New Version / Tag *</label>
+                                <input type="text" id="newVerTagInput" required placeholder="e.g. Alt-D or v3.0" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">New Google Drive URL *</label>
+                                <input type="url" id="newVerUrlInput" required placeholder="https://drive.google.com/..." class="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Revision Notes / Reason for Change</label>
+                            <input type="text" id="newVerNoteInput" placeholder="e.g. Lengthened Loop Line 2 & changed signal layout" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-xs font-bold shadow-sm transition-colors">
+                                Update to New Revision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Historical Revision Logs Timeline -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Previous Revisions Timeline</h4>
+                    <div id="versionTimelineList" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('versionModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- ================= MODAL: ADMIN LOGIN ================= -->
@@ -222,7 +281,7 @@
 
                 <div class="pt-3 border-t border-slate-200">
                     <div class="flex justify-between items-center mb-2">
-                        <p class="text-xs font-bold text-slate-700 uppercase tracking-wide">Station Documents (Google Drive Links)</p>
+                        <p class="text-xs font-bold text-slate-700 uppercase tracking-wide">Station Documents (Google Drive Links & Versioning)</p>
                         <button type="button" onclick="addDocumentRow()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md border border-blue-200 flex items-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
                             Add Another Document
@@ -254,10 +313,23 @@
         let sectionsData = [];
         let currentEditingStationId = null;
         let currentEditingSectionId = null;
+        let activeVersionContext = null; // { stId, docId }
         let pendingConfirmCallback = null;
 
         // Admin State Management
         let isAdmin = localStorage.getItem('railway_directory_admin') === 'true';
+
+        // Helper: Convert legacy simple doc objects to modern Version Schema
+        function normalizeDoc(d) {
+            return {
+                id: d.id || 'doc_' + Math.random().toString(36).substr(2, 9),
+                label: d.label || 'Document',
+                url: d.url || '',
+                version: d.version || 'Alt-A',
+                last_updated: d.last_updated || new Date().toISOString().split('T')[0],
+                history: Array.isArray(d.history) ? d.history : []
+            };
+        }
 
         function updateAdminUI() {
             const adminButtons = document.getElementById('adminActionButtons');
@@ -401,7 +473,7 @@
                             name: st.name,
                             code: st.code,
                             zone: st.zone,
-                            docs: st.docs || [],
+                            docs: (st.docs || []).map(normalizeDoc),
                             display_order: st.display_order || 0
                         }))
                 }));
@@ -488,11 +560,23 @@
 
             const docRows = document.querySelectorAll('#docsInputsContainer .doc-input-row');
             const docs = [];
+            
             docRows.forEach(row => {
                 const label = row.querySelector('.doc-label-input').value.trim();
                 const url = row.querySelector('.doc-url-input').value.trim();
+                const version = row.querySelector('.doc-ver-input').value.trim() || 'Alt-A';
+                const docId = row.dataset.docId || ('doc_' + Math.random().toString(36).substr(2, 9));
+                const existingHistory = row.dataset.history ? JSON.parse(decodeURIComponent(row.dataset.history)) : [];
+
                 if(label || url) {
-                    docs.push({ label: label || 'Document', url: url });
+                    docs.push({
+                        id: docId,
+                        label: label || 'Document',
+                        url: url,
+                        version: version,
+                        last_updated: new Date().toISOString().split('T')[0],
+                        history: existingHistory
+                    });
                 }
             });
 
@@ -599,6 +683,141 @@
             return palette[Math.abs(hash) % palette.length];
         }
 
+        // VERSION HISTORY MODAL ENGINE
+        function openVersionHistoryModal(stId, docId) {
+            let foundSt = null;
+            let foundDoc = null;
+
+            sectionsData.forEach(sec => {
+                sec.stations.forEach(st => {
+                    if(st.id === stId) {
+                        foundSt = st;
+                        foundDoc = st.docs.find(d => d.id === docId);
+                    }
+                });
+            });
+
+            if(!foundSt || !foundDoc) return;
+            activeVersionContext = { stId, docId };
+
+            document.getElementById('versionModalTitle').innerText = `${foundDoc.label} - Revision Logs`;
+            document.getElementById('versionModalSub').innerText = `${foundSt.name} (${foundSt.code})`;
+
+            // Render Active Version Card
+            const activeCard = document.getElementById('versionActiveCard');
+            activeCard.innerHTML = `
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-bold text-blue-900 bg-blue-200 px-2 py-0.5 rounded">ACTIVE REVISION</span>
+                        <span class="text-xs font-bold text-slate-700 font-mono">${foundDoc.version}</span>
+                        <span class="text-[11px] text-slate-500">Updated: ${foundDoc.last_updated}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 font-medium">Main document currently serving station operations.</p>
+                </div>
+                <a href="${foundDoc.url || '#'}" target="_blank" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
+                    <span>Open Active File</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            `;
+
+            // Admin Box Toggle
+            const adminBox = document.getElementById('adminNewVersionBox');
+            if(isAdmin) {
+                adminBox.classList.remove('hidden');
+                document.getElementById('newVerTagInput').value = '';
+                document.getElementById('newVerUrlInput').value = '';
+                document.getElementById('newVerNoteInput').value = '';
+            } else {
+                adminBox.classList.add('hidden');
+            }
+
+            // Render Timeline List
+            const timelineList = document.getElementById('versionTimelineList');
+            timelineList.innerHTML = '';
+
+            if(!foundDoc.history || foundDoc.history.length === 0) {
+                timelineList.innerHTML = `<p class="text-xs text-slate-400 italic py-2">No archived revisions recorded. This is the initial version (${foundDoc.version}).</p>`;
+            } else {
+                foundDoc.history.slice().reverse().forEach((h, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-slate-50 hover:bg-slate-100 p-3 rounded-lg border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 transition-colors';
+                    item.innerHTML = `
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded">${h.version}</span>
+                                <span class="text-xs text-slate-500 font-medium">${h.updated_at || 'Archived'}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mt-1">${h.note || 'No revision comments.'}</p>
+                        </div>
+                        <a href="${h.url || '#'}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 font-semibold underline flex items-center gap-1">
+                            <span>View Archived File</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </a>
+                    `;
+                    timelineList.appendChild(item);
+                });
+            }
+
+            document.getElementById('versionModal').classList.remove('hidden');
+        }
+
+        // PUBLISH NEW REVISION (ADMIN ONLY)
+        async function handlePublishNewVersion(e) {
+            e.preventDefault();
+            if(!isAdmin || !activeVersionContext) return;
+
+            const { stId, docId } = activeVersionContext;
+            const newTag = document.getElementById('newVerTagInput').value.trim();
+            const newUrl = document.getElementById('newVerUrlInput').value.trim();
+            const newNote = document.getElementById('newVerNoteInput').value.trim();
+
+            let targetSt = null;
+            sectionsData.forEach(sec => {
+                const st = sec.stations.find(x => x.id === stId);
+                if(st) targetSt = st;
+            });
+
+            if(!targetSt) return;
+
+            const updatedDocs = targetSt.docs.map(doc => {
+                if(doc.id === docId) {
+                    const archivedEntry = {
+                        version: doc.version,
+                        url: doc.url,
+                        updated_at: doc.last_updated,
+                        note: newNote || 'Replaced by newer revision'
+                    };
+                    const history = doc.history || [];
+                    history.push(archivedEntry);
+
+                    return {
+                        ...doc,
+                        version: newTag,
+                        url: newUrl,
+                        last_updated: new Date().toISOString().split('T')[0],
+                        history: history
+                    };
+                }
+                return doc;
+            });
+
+            try {
+                const { error } = await supabaseClient
+                    .from('stations')
+                    .update({ docs: updatedDocs })
+                    .eq('id', stId);
+
+                if (error) throw error;
+
+                closeModal('versionModal');
+                await fetchDataFromSupabase();
+                showToast("✓ New Revision Published Successfully!");
+
+            } catch (err) {
+                showToast("Failed to update revision: " + err.message, true);
+            }
+        }
+
         function openDocViewerModal(stId) {
             let foundSt = null;
             sectionsData.forEach(sec => {
@@ -622,14 +841,25 @@
                     item.innerHTML = `
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-slate-400 font-mono w-5">${idx + 1}.</span>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border ${getBadgeStyle(d.label)}">
-                                ${d.label}
-                            </span>
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border ${getBadgeStyle(d.label)}">
+                                        ${d.label}
+                                    </span>
+                                    <span class="text-[11px] font-mono bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">${d.version}</span>
+                                </div>
+                                <span class="text-[10px] text-slate-400 block mt-0.5">Updated: ${d.last_updated}</span>
+                            </div>
                         </div>
-                        <a href="${d.url || '#'}" target="_blank" class="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white border border-slate-200 hover:border-blue-300 px-3 py-1.5 rounded-md shadow-sm transition-colors">
-                            <span>Open Link</span>
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                        </a>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="closeModal('docViewerModal'); openVersionHistoryModal('${foundSt.id}', '${d.id}')" class="text-xs text-slate-600 hover:text-slate-900 border border-slate-300 bg-white px-2.5 py-1.5 rounded-md shadow-sm font-medium">
+                                History (${(d.history || []).length})
+                            </button>
+                            <a href="${d.url || '#'}" target="_blank" class="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white border border-slate-200 hover:border-blue-300 px-3 py-1.5 rounded-md shadow-sm transition-colors">
+                                <span>Open</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </a>
+                        </div>
                     `;
                     listContainer.appendChild(item);
                 });
@@ -708,7 +938,7 @@
                 if(activeSectionFilter !== 'ALL' && activeSectionFilter !== sec.id) return;
 
                 const filteredStations = sec.stations.filter(st => {
-                    const searchStr = `${st.name} ${st.code} ${st.zone} ${sec.name} ${st.docs.map(d=>d.label).join(' ')}`.toLowerCase();
+                    const searchStr = `${st.name} ${st.code} ${st.zone} ${sec.name} ${st.docs.map(d=>d.label + ' ' + d.version).join(' ')}`.toLowerCase();
                     return searchStr.includes(query);
                 });
 
@@ -731,10 +961,15 @@
                         const hiddenCount = st.docs.length - MAX_INLINE_DOCS;
 
                         let docButtonsHtml = visibleDocs.map(d => `
-                            <a href="${d.url || '#'}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${getBadgeStyle(d.label)}">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                                ${d.label}
-                            </a>
+                            <div class="inline-flex items-center gap-1 border border-slate-200 bg-white rounded-md p-0.5 shadow-sm">
+                                <a href="${d.url || '#'}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${getBadgeStyle(d.label)}">
+                                    <span>${d.label}</span>
+                                    <span class="text-[10px] font-mono bg-white/80 px-1 rounded text-slate-800">${d.version}</span>
+                                </a>
+                                <button type="button" onclick="openVersionHistoryModal('${st.id}', '${d.id}')" title="View Version Logs" class="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </button>
+                            </div>
                         `).join('');
 
                         if(hiddenCount > 0) {
@@ -831,7 +1066,7 @@
                                     <tr>
                                         <th class="px-6 py-3">Station Name</th>
                                         <th class="px-6 py-3">Code</th>
-                                        <th class="px-6 py-3">Linked Documents</th>
+                                        <th class="px-6 py-3">Linked Documents & Revisions</th>
                                         ${isAdmin ? `<th class="px-6 py-3 text-right">Order / Actions</th>` : ''}
                                     </tr>
                                 </thead>
@@ -846,14 +1081,20 @@
             document.getElementById('overallStats').innerText = `${sectionsData.length} Sections | ${totalStations} Total Stations`;
         }
 
-        function addDocumentRow(label = '', url = '') {
+        function addDocumentRow(label = '', url = '', version = 'Alt-A', docId = null, history = []) {
             const container = document.getElementById('docsInputsContainer');
             const row = document.createElement('div');
-            row.className = 'doc-input-row flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200';
+            const actualDocId = docId || ('doc_' + Math.random().toString(36).substr(2, 9));
+            
+            row.className = 'doc-input-row flex flex-col sm:flex-row items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200';
+            row.dataset.docId = actualDocId;
+            row.dataset.history = encodeURIComponent(JSON.stringify(history));
+
             row.innerHTML = `
-                <input type="text" value="${label}" placeholder="Doc Name (SIP, ESP, RSP, etc.)" class="doc-label-input w-1/3 px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
-                <input type="url" value="${url}" placeholder="Google Drive URL" class="doc-url-input w-2/3 px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50" title="Remove Document">
+                <input type="text" value="${label}" placeholder="Doc Name (SIP, ESP, etc.)" class="doc-label-input w-full sm:w-1/4 px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                <input type="text" value="${version}" placeholder="Version (Alt-A)" class="doc-ver-input w-full sm:w-1/6 px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-mono">
+                <input type="url" value="${url}" placeholder="Google Drive URL" class="doc-url-input w-full sm:w-1/2 px-2.5 py-1.5 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 self-end sm:self-center" title="Remove Document">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             `;
@@ -930,7 +1171,7 @@
                     document.getElementById('stationZoneInput').value = foundSt.zone || '';
 
                     if(foundSt.docs && foundSt.docs.length > 0) {
-                        foundSt.docs.forEach(d => addDocumentRow(d.label, d.url));
+                        foundSt.docs.forEach(d => addDocumentRow(d.label, d.url, d.version, d.id, d.history));
                     } else {
                         addDefaultDocRows();
                     }
@@ -947,9 +1188,9 @@
         }
 
         function addDefaultDocRows() {
-            addDocumentRow('SIP', '');
-            addDocumentRow('ESP', '');
-            addDocumentRow('RSP', '');
+            addDocumentRow('SIP', '', 'Alt-A');
+            addDocumentRow('ESP', '', 'Alt-A');
+            addDocumentRow('SWR', '', 'v1.0');
         }
 
         function closeModal(modalId) {
